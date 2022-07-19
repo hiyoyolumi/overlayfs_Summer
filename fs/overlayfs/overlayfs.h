@@ -433,3 +433,7 @@ int ovl_set_origin(struct dentry *dentry, struct dentry *lower,
 
 /* export.c */
 extern const struct export_operations ovl_export_operations;
+
+/* overlayfs */
+int ovl_register_sysfs(struct super_block *sb);
+int ovl_mergedir_backup_kobj_rename(struct super_block *sb, const char *str);
