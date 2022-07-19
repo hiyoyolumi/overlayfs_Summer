@@ -20,6 +20,8 @@
 #include <linux/exportfs.h>
 #include "overlayfs.h"
 
+
+
 MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
 MODULE_DESCRIPTION("Overlay filesystem");
 MODULE_LICENSE("GPL");
@@ -247,6 +249,9 @@ static void ovl_free_fs(struct ovl_fs *ofs)
 	kfree(ofs->config.redirect_mode);
 	if (ofs->creator_cred)
 		put_cred(ofs->creator_cred);
+
+	kobject_put(&ofs->kobj);
+
 	kfree(ofs);
 }
 
@@ -1785,6 +1790,10 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 
 	sb->s_root = root_dentry;
 
+	err = ovl_register_sysfs(sb);
+	if (err)
+		goto out_free_oe;
+	
 	return 0;
 
 out_free_oe:
@@ -1803,11 +1812,24 @@ static struct dentry *ovl_mount(struct file_system_type *fs_type, int flags,
 	return mount_nodev(fs_type, flags, raw_data, ovl_fill_super);
 }
 
+static int ovl_back_up(struct dentry *mp, struct super_block *sb)
+{
+	char buffer[512];
+	char *tmp;
+	int err;
+
+	tmp = dentry_path_raw(mp, buffer, sizeof(buffer));
+	err = ovl_mergedir_backup_kobj_rename(sb, tmp);
+
+	return err;
+}
+
 static struct file_system_type ovl_fs_type = {
 	.owner		= THIS_MODULE,
 	.name		= "overlay",
 	.mount		= ovl_mount,
 	.kill_sb	= kill_anon_super,
+	.back_up    = ovl_back_up,
 };
 MODULE_ALIAS_FS("overlay");
 

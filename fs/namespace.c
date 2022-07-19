@@ -2563,6 +2563,16 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
 	err = do_add_mount(real_mount(mnt), path, mnt_flags);
 	if (err)
 		mntput(mnt);
+
+	/* The mount point is updated after do_add_mount,  
+	 * we back up the merge point information here, 
+	 * when only the fs type is overlayfs
+	 */
+	if (strncmp(type->name, "overlay", strlen("overlay")) == 0) {
+		err = type->back_up(real_mount(mnt)->mnt_mountpoint, 
+								real_mount(mnt)->mnt.mnt_sb);
+	}
+
 	return err;
 }
 

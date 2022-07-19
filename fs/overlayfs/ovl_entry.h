@@ -7,6 +7,8 @@
  * under the terms of the GNU General Public License version 2 as published by
  * the Free Software Foundation.
  */
+#include <linux/kobject.h>
+#include <linux/seqlock.h>
 
 struct ovl_config {
 	char *lowerdir;
@@ -47,6 +49,16 @@ struct ovl_path {
 	struct dentry *dentry;
 };
 
+struct ovl_config_backup {
+	/* As a back up of a overlayfs information */
+	char *upperdir;
+    char *lowerdir;
+    char *workdir;
+    char *mergedir;
+	/* Use to project config back up */
+	seqlock_t config_sl;
+};
+
 /* private information held for overlayfs's superblock */
 struct ovl_fs {
 	struct vfsmount *upper_mnt;
@@ -80,6 +92,10 @@ struct ovl_fs {
 	int xino_mode;
 	/* For allocation of non-persistent inode numbers */
 	atomic_long_t last_ino;
+	/* sysfs register */
+	struct kobject kobj;
+	/* config information back up */
+	struct ovl_config_backup config_backup;
 };
 
 static inline struct ovl_fs *OVL_FS(struct super_block *sb)
